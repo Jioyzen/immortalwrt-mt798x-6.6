@@ -49,7 +49,7 @@ jobs:
         run: |
           cp defconfig/qihoo-360t7-clean.config .config
           make defconfig
-          grep -E '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_qihoo_360t7=y$' .config
+          grep -E '^CONFIG_TARGET_mediatek_filogic_DEVICE_qihoo_360t7=y$' .config
           grep -E '^CONFIG_PACKAGE_(kmod-mt_wifi|ppp-mod-pppoe|odhcp6c|luci-theme-argon)=y$' .config
           if grep -E '^CONFIG_PACKAGE_(ttyd|e2fsprogs|ntfs3-mount|kmod-usb|kmod-fs-(autofs4|exfat|ext4|ntfs3|vfat))=y$' .config; then
             echo "Unexpected package selected in the clean 360T7 profile" >&2

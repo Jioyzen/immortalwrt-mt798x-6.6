@@ -51,12 +51,25 @@ jobs:
           make defconfig
           grep -E '^CONFIG_TARGET_DEVICE_mediatek_filogic_DEVICE_qihoo_360t7=y$' .config
           grep -E '^CONFIG_PACKAGE_(kmod-mt_wifi|ppp-mod-pppoe|odhcp6c|luci-theme-argon)=y$' .config
+          if grep -E '^CONFIG_PACKAGE_(ttyd|e2fsprogs|ntfs3-mount|kmod-usb|kmod-fs-(autofs4|exfat|ext4|ntfs3|vfat))=y$' .config; then
+            echo "Unexpected package selected in the clean 360T7 profile" >&2
+            exit 1
+          fi
 
       - name: Download source archives
         run: make download -j"$(nproc)"
 
       - name: Build firmware
-        run: make -j"$(nproc)" V=s
+        run: make -j2 2>&1 | tee build.log
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: 360t7-build-log-${{ github.run_number }}
+          path: build.log
+          if-no-files-found: ignore
+          retention-days: 14
 
       - name: Prepare release assets
         id: assets
@@ -69,6 +82,7 @@ jobs:
           cp "$target/immortalwrt-mediatek-filogic-qihoo_360t7-initramfs-kernel.bin" "$assets/"
           cp "$target/immortalwrt-mediatek-filogic.manifest" "$assets/"
           cp "$target/config.buildinfo" "$assets/"
+          wc -l < "$target/immortalwrt-mediatek-filogic.manifest" | tr -d ' ' > "$assets/PACKAGE_COUNT"
           printf '%s\n' "$(git rev-parse HEAD)" > "$assets/SOURCE_COMMIT"
           (cd "$assets" && sha256sum * > SHA256SUMS)
           ls -lh "$assets"

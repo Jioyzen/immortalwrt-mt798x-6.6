@@ -1,5 +1,10 @@
 ccflags-y += $(MODULE_FLAGS) -Inet/nat -I$(PKG_BUILD_DIR)../warp -I$(PKG_BUILD_DIR)../warp/mcu -DCONFIG_WARP_VERSION=$(CONFIG_WARP_VERSION)
 
+# WARP is packaged with a dependency on kmod-mediatek_hnat. Some external
+# module builds do not expose the HNAT Kconfig symbol to this Makefile's
+# translation units, although the HNAT module is enabled in the kernel.
+ccflags-y += -DCONFIG_NET_MEDIATEK_HNAT_MODULE
+
 ifeq ($(CONFIG_WARP_ATC_SUPPORT), y)
 ccflags-y += -DCONFIG_WARP_ATC_SUPPORT
 endif

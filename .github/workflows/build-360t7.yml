@@ -1,0 +1,97 @@
+name: Build and release 360T7 firmware
+
+on:
+  push:
+    branches: [360t7-clean]
+    paths:
+      - '.github/workflows/build-360t7.yml'
+      - 'config/360t7.config'
+      - 'scripts/build-360t7.sh'
+      - 'scripts/update-360t7-feeds.sh'
+      - 'target/linux/mediatek/**'
+      - 'package/mtk/**'
+      - 'feeds.conf.default'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-360t7-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 360
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Free runner disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            build-essential clang flex bison g++ gawk gcc-multilib g++-multilib \
+            gettext git libelf-dev libncurses-dev libssl-dev python3-dev \
+            python3-setuptools python3-pyelftools python3-yaml rsync swig \
+            time unzip wget xsltproc zlib1g-dev file
+
+      - name: Update and install feeds
+        run: ./scripts/update-360t7-feeds.sh
+
+      - name: Build 360T7 image
+        run: |
+          set -o pipefail
+          JOBS="$(nproc)" ./scripts/build-360t7.sh 2>&1 | tee build-360t7.log
+
+      - name: Prepare release assets
+        if: success()
+        run: |
+          set -euo pipefail
+          target=bin/targets/mediatek/filogic
+          assets=release-assets
+          mkdir -p "$assets"
+          image="$(find "$target" -maxdepth 1 -type f -name '*qihoo_360t7*squashfs-sysupgrade.bin' -print -quit)"
+          manifest="$(find "$target" -maxdepth 1 -type f -name '*qihoo_360t7*.manifest' -print -quit)"
+          test -n "$image" && test -n "$manifest"
+          cp "$image" "$assets/"
+          cp "$manifest" "$assets/"
+          cp "$target/config.buildinfo" "$assets/"
+          cp config/360t7.config "$assets/"
+          cp build-360t7.log "$assets/"
+          wc -l < "$manifest" | tr -d ' ' > "$assets/PACKAGE_COUNT"
+          printf '%s\n' "$(git rev-parse HEAD)" > "$assets/SOURCE_COMMIT"
+          (cd "$assets" && sha256sum * > SHA256SUMS)
+          ls -lh "$assets"
+
+      - name: Upload build artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: immortalwrt-360t7-${{ github.run_number }}
+          path: |
+            release-assets/*
+            build-360t7.log
+          if-no-files-found: warn
+          retention-days: 30
+
+      - name: Publish GitHub release
+        if: success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag="360t7-$(date -u +%Y%m%d)-run${GITHUB_RUN_NUMBER}-attempt${GITHUB_RUN_ATTEMPT}"
+          gh release create "$tag" release-assets/* \
+            --title "ImmortalWrt 360T7 $tag" \
+            --notes "Built from commit $(git rev-parse HEAD). See attached manifest, build config, and SHA256SUMS."

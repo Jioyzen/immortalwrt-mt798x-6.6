@@ -344,8 +344,7 @@ static NDIS_STATUS IPMacTable_init(
 		pEntry->pNext = NULL;
 		pIPMacTable->hash[IPMAC_TB_HASH_INDEX_OF_BCAST] = pEntry;
 		pIPMacTable->valid = TRUE;
-	} else
-		MTWF_DBG(NULL, DBG_CAT_PROTO, CATPROTO_MAT, DBG_LVL_ERROR, "IPMacTable already inited!\n");
+	}
 
 	return TRUE;
 }

@@ -5900,7 +5900,8 @@ NDIS_STATUS	RTMPSetProfileParameters(
 #endif
 
 		/* set file parameter to portcfg*/
-		if (RTMPGetKeyParameter("MacAddress", tmpbuf, 25, pBuffer, TRUE)) {
+		/* Ignore empty/placeholder profile values (for example "::"). */
+		if (RTMPGetKeyParameter("MacAddress", tmpbuf, 25, pBuffer, TRUE) && strlen(tmpbuf) == 17) {
 			retval = RT_CfgSetMacAddress(pAd, tmpbuf, 0, OPMODE_AP);
 
 			if (retval)
@@ -5918,7 +5919,7 @@ NDIS_STATUS	RTMPSetProfileParameters(
 			for (i = 1; i < pAd->ApCfg.BssidNum; i++) {
 				snprintf(tok_str, sizeof(tok_str), "MacAddress%d", i);
 
-				if (RTMPGetKeyParameter(tok_str, tmpbuf, 25, pBuffer, TRUE)) {
+				if (RTMPGetKeyParameter(tok_str, tmpbuf, 25, pBuffer, TRUE) && strlen(tmpbuf) == 17) {
 					retval = RT_CfgSetMacAddress(pAd, tmpbuf, i, OPMODE_AP);
 
 					if (retval)
@@ -5930,14 +5931,14 @@ NDIS_STATUS	RTMPSetProfileParameters(
 #endif /* MBSS_SUPPORT */
 
 #ifdef CONFIG_APSTA_MIXED_SUPPORT
-			if (RTMPGetKeyParameter("ApcliMacAddress", tmpbuf, 25, pBuffer, TRUE)) {
+			if (RTMPGetKeyParameter("ApcliMacAddress", tmpbuf, 25, pBuffer, TRUE) && strlen(tmpbuf) == 17) {
 				retval = RT_CfgSetMacAddress(pAd, tmpbuf, 0, OPMODE_STA);
 
 				if (retval)
 					MTWF_DBG(pAd, DBG_CAT_CFG, DBG_SUBCAT_ALL, DBG_LVL_INFO, "ApcliMacAddress = "MACSTR"\n",
 							 MAC2STR(pAd->ApcliAddr[0]));
 			}
-			if (RTMPGetKeyParameter("ApcliMacAddress1", tmpbuf, 25, pBuffer, TRUE)) {
+			if (RTMPGetKeyParameter("ApcliMacAddress1", tmpbuf, 25, pBuffer, TRUE) && strlen(tmpbuf) == 17) {
 				retval = RT_CfgSetMacAddress(pAd, tmpbuf, 1, OPMODE_STA);
 
 				if (retval)

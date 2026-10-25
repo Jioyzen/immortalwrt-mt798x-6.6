@@ -18,7 +18,8 @@ detect_mtwifi() {
 				if [ $idx -eq 1 ]; then
 					band="2g"
 					hwmode="11g"
-					htmode="HE40"
+					# 20 MHz is more robust in crowded 2.4 GHz environments.
+					htmode="HE20"
 					htbsscoex="1"
 					ssid="ImmortalWrt-2.4G"
 					dbdc_main="1"
@@ -47,7 +48,7 @@ detect_mtwifi() {
 					set wireless.${dev}.country=CN
 					set wireless.${dev}.mu_beamformer=1
 					set wireless.${dev}.noscan=${htbsscoex}
-					set wireless.${dev}.wapp=0
+					set wireless.${dev}.wapp=1
 					set wireless.${dev}.serialize=1
 					
 					set wireless.default_${dev}=wifi-iface

@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/build-360t7.yml'
       - 'config/360t7.config'
+      - 'config/README-360T7.md'
       - 'scripts/build-360t7.sh'
       - 'scripts/update-360t7-feeds.sh'
       - 'target/linux/mediatek/**'

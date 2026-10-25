@@ -13,6 +13,8 @@ JOBS=12 ./scripts/build-360t7.sh
 
 The sysupgrade image and package manifest are written under `bin/targets/mediatek/filogic/`. The script checks that HNAT, its LuCI page, ttyd, and its Simplified Chinese translation are included.
 
+The verified local image currently has 403 packages in its manifest. The HNAT LuCI application declares several networking dependencies, so this count includes its required modules.
+
 ## GitHub Actions
 
 Push changes to `360t7-clean` to run the same build on GitHub Actions, or start `Build and release 360T7 firmware` from the Actions tab. Successful runs publish the image, package manifest, build config, package count, and SHA256 checksums as both a workflow artifact and a GitHub release.

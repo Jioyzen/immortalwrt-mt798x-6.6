@@ -1,101 +1,60 @@
-<img src="https://avatars.githubusercontent.com/u/53193414?s=200&v=4" alt="logo" width="200" height="200" align="right">
+# ImmortalWrt 360T7 固件
 
-# Project ImmortalWrt
+本仓库基于 [padavanonly/immortalwrt-mt798x-6.6](https://github.com/padavanonly/immortalwrt-mt798x-6.6)，为 Qihoo 360T7（MT7981 / Filogic）提供配置和构建流程。源码使用 Linux 6.6 内核与 MTK SDK 无线驱动路线。
 
-ImmortalWrt is a fork of [OpenWrt](https://openwrt.org), with more packages ported, more devices supported, default optimized profiles and localization modifications for mainland China users.<br/>
-Compared to upstream, we allow to use (non-upstreamable) modifications/hacks to provide better feature/performance/support.
+## 固件信息
 
-Default login address: http://192.168.6.1 or http://immortalwrt.lan, username: __root__, password: _none_.
+- 设备：Qihoo 360T7，目标 `mediatek/filogic`，设备配置 `qihoo_360t7`
+- 无线：使用本仓库上游 MTK SDK 驱动及 360T7 适配
+- 默认网络地址：`192.168.6.1`（首次启动后按需修改）
+- 默认登录：`root`，无密码；首次登录后请立即设置密码
+- 额外包含：MTK HNAT 驱动及 LuCI 页面、ttyd 终端和简体中文包
+- 最近一次本地构建清单：403 个软件包；实际选择以构建生成的 `.manifest` 为准
 
-## Download
-Built firmware images are available for many architectures and come with a package selection to be used as WiFi home router. To quickly find a factory image usable to migrate from a vendor stock firmware to ImmortalWrt, try the *Firmware Selector*.
+构建产物位于 `bin/targets/mediatek/filogic/`，360T7 的升级镜像名称包含 `qihoo_360t7` 和 `squashfs-sysupgrade.bin`。固件使用前请核对设备型号、镜像类型，并保留可用的恢复方式。
 
-- [ImmortalWrt Firmware Selector](https://firmware-selector.immortalwrt.org/)
+## 本地构建
 
-If your device is supported, please follow the **Info** link to see install instructions or consult the support resources listed below.
+需要 Debian/Ubuntu x86_64 主机、稳定网络和充足磁盘空间。先安装常用构建依赖：
 
-## Development
-To build your own firmware you need a GNU/Linux, BSD or macOS system (case sensitive filesystem required). Cygwin is unsupported because of the lack of a case sensitive file system.<br/>
+```sh
+sudo apt update
+sudo apt install -y build-essential clang flex bison g++ gawk gcc-multilib \
+  g++-multilib gettext git libelf-dev libncurses-dev libssl-dev python3-dev \
+  python3-setuptools python3-pyelftools python3-yaml rsync swig time unzip \
+  wget xsltproc zlib1g-dev file
+```
 
-  ### Requirements
-  To build with this project, Debian 11 is preferred. And you need use the CPU based on AMD64 architecture, with at least 4GB RAM and 25 GB available disk space. Make sure the __Internet__ is accessible.
+克隆本仓库的 `360t7-clean` 分支，锁定 feeds 并构建：
 
-  The following tools are needed to compile ImmortalWrt, the package names vary between distributions.
+```sh
+git clone --branch 360t7-clean --single-branch \
+  https://github.com/Jioyzen/immortalwrt-mt798x-6.6.git
+cd immortalwrt-mt798x-6.6
+./scripts/update-360t7-feeds.sh
+JOBS=12 ./scripts/build-360t7.sh
+```
 
-  - Here is an example for Debian/Ubuntu users:<br/>
-    - Method 1:
-      <details>
-        <summary>Setup dependencies via APT</summary>
+`update-360t7-feeds.sh` 会检出本地验证时使用的 feeds 提交并安装 feeds；`build-360t7.sh` 会应用 `config/360t7.config`、生成配置、下载源码并编译。可通过 `JOBS` 调整并行线程数。不传 `JOBS` 时使用主机报告的 CPU 线程数。
 
-        ```bash
-        sudo apt update -y
-        sudo apt full-upgrade -y
-        sudo apt install -y ack antlr3 asciidoc autoconf automake autopoint binutils bison build-essential \
-          bzip2 ccache clang cmake cpio curl device-tree-compiler ecj fastjar flex gawk gettext gcc-multilib \
-          g++-multilib git gnutls-dev gperf haveged help2man intltool lib32gcc-s1 libc6-dev-i386 libelf-dev \
-          libglib2.0-dev libgmp3-dev libltdl-dev libmpc-dev libmpfr-dev libncurses-dev libpython3-dev \
-          libreadline-dev libssl-dev libtool libyaml-dev libz-dev lld llvm lrzsz mkisofs msmtp nano \
-          ninja-build p7zip p7zip-full patch pkgconf python3 python3-pip python3-ply python3-docutils \
-          python3-pyelftools qemu-utils re2c rsync scons squashfs-tools subversion swig texinfo uglifyjs \
-          upx-ucl unzip vim wget xmlto xxd zlib1g-dev zstd
-        ```
-      </details>
-    - Method 2:
-      ```bash
-      sudo bash -c 'bash <(curl -s https://build-scripts.immortalwrt.org/init_build_environment.sh)'
-      ```
+## GitHub Actions 云端构建
 
-  Note:
-  - Do everything as an unprivileged user, not root, without sudo.
-  - Using CPUs based on other architectures should be fine to compile ImmortalWrt, but more hacks are needed - No warranty at all.
-  - You must __not__ have spaces or non-ascii characters in PATH or in the work folders on the drive.
-  - If you're using Windows Subsystem for Linux (or WSL), removing Windows folders from PATH is required, please see [Build system setup WSL](https://openwrt.org/docs/guide-developer/build-system/wsl) documentation.
-  - Using macOS as the host build OS is __not__ recommended. No warranty at all. You can get tips from [Build system setup macOS](https://openwrt.org/docs/guide-developer/build-system/buildroot.exigence.macosx) documentation.
-  - For more details, please see [Build system setup](https://openwrt.org/docs/guide-developer/build-system/install-buildsystem) documentation.
+工作流文件：`.github/workflows/build-360t7.yml`。
 
-  ### Quickstart
-  1. Run `git clone -b openwrt-24.10-6.6 --single-branch --filter=blob:none https://github.com/padavanonly/immortalwrt-mt798x-24.10 immortalwrt-mt798x-24.10` to clone the source code.
-  2. Run `cd immortalwrt-mt798x-24.10` to enter source directory.
-  3. Run `./scripts/feeds update -a` to obtain all the latest package definitions defined in feeds.conf / feeds.conf.default
-  4. Run `./scripts/feeds install -a` to install symlinks for all obtained packages into package/feeds/
-  5. Copy the configuration file for your device from the `defconfig` directory to the project root directory and rename it `.config`
-     
-     ```
-     # MT7981
-     cp -f defconfig/mt7981-ax3000.config .config
+- 推送到 `360t7-clean` 分支且修改构建相关文件时自动构建。
+- 也可以在 GitHub 仓库的 **Actions → Build and release 360T7 firmware → Run workflow** 手动启动。
+- 云端使用 Ubuntu 24.04 和可用 CPU 线程数，运行同一套 feeds 锁定及构建脚本。
+- 成功后会上传镜像、manifest、配置、日志和 SHA256 校验文件为 Actions artifact，并创建 GitHub Release。
 
-     # MT7986
-     cp -f defconfig/mt7986-ax6000.config .config
-     
-  6. Run `make` to build your firmware. This will download all sources, build the cross-compile toolchain and then cross-compile the GNU/Linux kernel & all chosen applications for your target system.
+本仓库的本地构建已成功完成。本次云端构建仍需以 Actions 实际运行结果确认；云端磁盘、网络或 runner 环境差异仍可能导致失败。
 
-  ### Related Repositories
-  The main repository uses multiple sub-repositories to manage packages of different categories. All packages are installed via the OpenWrt package manager called opkg. If you're looking to develop the web interface or port packages to ImmortalWrt, please find the fitting repository below.
-  - [LuCI Web Interface](https://github.com/immortalwrt/luci): Modern and modular interface to control the device via a web browser.
-  - [ImmortalWrt Packages](https://github.com/immortalwrt/packages): Community repository of ported packages.
-  - [OpenWrt Routing](https://github.com/openwrt/routing): Packages specifically focused on (mesh) routing.
-  - [OpenWrt Video](https://github.com/openwrt/video): Packages specifically focused on display servers and clients (Xorg and Wayland).
+## 构建配置
 
-## Support Information
-For a list of supported devices see the [OpenWrt Hardware Database](https://openwrt.org/supported_devices)
-  ### Documentation
-  - [Quick Start Guide](https://openwrt.org/docs/guide-quick-start/start)
-  - [User Guide](https://openwrt.org/docs/guide-user/start)
-  - [Developer Documentation](https://openwrt.org/docs/guide-developer/start)
-  - [Technical Reference](https://openwrt.org/docs/techref/start)
+- 设备配置：[`config/360t7.config`](config/360t7.config)
+- 本地构建脚本：[`scripts/build-360t7.sh`](scripts/build-360t7.sh)
+- feeds 锁定脚本：[`scripts/update-360t7-feeds.sh`](scripts/update-360t7-feeds.sh)
+- 云端工作流：[`.github/workflows/build-360t7.yml`](.github/workflows/build-360t7.yml)
 
-  ### Support Community
-  - Support Chat: group [@ctcgfw_openwrt_discuss](https://t.me/ctcgfw_openwrt_discuss) on [Telegram](https://telegram.org/).
-  - Support Chat: group [#immortalwrt](https://matrix.to/#/#immortalwrt:matrix.org) on [Matrix](https://matrix.org/).
+## 上游与许可
 
-## License
-ImmortalWrt is licensed under [GPL-2.0-only](https://spdx.org/licenses/GPL-2.0-only.html).
-
-## Acknowledgements
-<table>
-  <tr>
-    <td><a href="https://dlercloud.com/"><img src="https://user-images.githubusercontent.com/22235437/111103249-f9ec6e00-8588-11eb-9bfc-67cc55574555.png" width="183" height="52" border="0" alt="Dler Cloud"></a></td>
-    <td><a href="https://www.jetbrains.com/"><img src="https://resources.jetbrains.com/storage/products/company/brand/logos/jb_square.png" width="120" height="120" border="0" alt="JetBrains Black Box Logo logo"></a></td>
-    <td><a href="https://sourceforge.net/"><img src="https://sourceforge.net/sflogo.php?type=17&group_id=3663829" alt="SourceForge" width=200></a></td>
-  </tr>
-</table>
+本项目保留上游 ImmortalWrt / OpenWrt 代码与相应许可。上游 MTK SDK 源码见 [padavanonly/immortalwrt-mt798x-6.6](https://github.com/padavanonly/immortalwrt-mt798x-6.6)。
